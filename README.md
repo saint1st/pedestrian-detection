@@ -138,6 +138,6 @@ This section provides the full configuration and results for each model variant 
 
 | Metric ID | Value |
 | :--- | :--- |
-| `AP@0.5` | 0.8586 |
-| `AP@0.75` | 0.4549 |
-| **Final Score** | **0.34325** |
+| `AP@0.5` | 0.9025 |
+| `AP@0.75` | 0.5348 |
+| **Final Score** | **0.28135** |
