@@ -141,3 +141,49 @@ This section provides the full configuration and results for each model variant 
 | `AP@0.5` | 0.9025 |
 | `AP@0.75` | 0.5348 |
 | **Final Score** | **0.28135** |
+
+---
+
+## ⚙️ Post-Processing & Ensemble Strategy (WBF and NMS)
+
+We implemented an advanced ensemble pipeline centered on **Weighted Boxes Fusion (WBF)**, moving beyond simple NMS to maximize localization precision from the five trained detectors.
+
+| Technique | Role in Pipeline | Intuition / Why it's Better |
+| :--- | :--- | :--- |
+| **Weighted Boxes Fusion (WBF)** | Primary ensembling method (Step 2) | **Fusion over Suppression:** Averages coordinates of overlapping boxes from multiple models, refining geometry and preserving recall better than NMS. |
+| **Simple NMS Baseline** | Sanity Check | Used as a reference point; typically trails WBF on multi-model ensembles because it discards valuable positional information. |
+| **Consensus Gating** (`MIN_MODELS`) | False Positive Reduction (Step 5) | **Forced Agreement:** Requires a fused box to be supported by a minimum number of individual models, aggressively cutting out False Positives. |
+| **Final NMS Pass** | Final Deduplication (Step 6) | A light cleanup step run *after* WBF and consensus filtering to remove any final, near-duplicate boxes within the single fused set. |
+
+### 🧬 End-to-End Ensemble Pipeline Steps
+
+Our pipeline is an 11-step, repeatable process designed to optimize for the **Kaggle-style metric** ($\text{Score} = ((1 - \text{AP}_{50}) + (1 - \text{AP}_{75})) / 2$).
+
+1.  **Export & Cache Predictions** (Per-model JSONs)
+2.  **Weighted Boxes Fusion (WBF)** (Fuse boxes based on `IOU_THR`, `SKIP_BOX_THR`)
+3.  **Post-WBF Score Filter** (`FINAL_SCORE_THR`)
+4.  **Pixel Conversion** (Normalize to Integer Pixels)
+5.  **Consensus Filter (Optional)** (Filter by `MIN_MODELS` agreement)
+6.  **Final NMS** (Deduplication with `FINAL_NMS_IOU`)
+7.  **Max Detections Cap** (`MAX_DETS`)
+8.  **Write Detections** (Competition Format)
+9.  **Grid Search** (Sweep over all key ensemble parameters)
+10. **Official Evaluation** (Compute AP@0.50 and AP@0.75)
+11. **Compute Competition Score** (Final metric optimization)
+
+### 🧪 Automated Parameter Optimization via Grid Search
+
+To find the optimal ensemble configuration, we execute a grid search over key hyperparameters that govern the fusion and filtering process.
+
+| Parameter | Description | Role in WBF/Filtering |
+| :--- | :--- | :--- |
+| `IOU_THR` | WBF merge IoU | Minimum overlap required for boxes from different models to be merged by WBF. |
+| `SKIP_BOX_THR` | Per-model Pre-filter | Per-model predictions below this score are discarded *before* the WBF fusion step. |
+| `FINAL_SCORE_THR` | Post-WBF Score Filter | Fused boxes must have a score $\ge$ this value to survive the initial cleanup. |
+| `FINAL_NMS_IOU` | Final NMS Deduplication | IoU threshold for the final deduplication pass on the fully fused box set. |
+| `MIN_MODELS` | Consensus Gating Requirement | **Crucial for FP reduction:** A fused box must be supported by at least this many source models to be accepted. |
+| `MAX_DETS` | Detections Cap | Keeps only the top-K highest scoring boxes per image to stabilize results and meet evaluation limits. |
+
+***
+
+**Current Status:** The final hyperparameter grid search is actively running to find the globally optimal setting for the combined ensemble. Results, including the best configuration and the final score achieved, will be updated here upon completion.
