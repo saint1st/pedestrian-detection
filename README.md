@@ -76,7 +76,9 @@ This section provides the full configuration and results for each model variant 
 * **Setup:** `yolov8n.pt` weights, 50 epochs, `imgsz=640`, `batch=16`, using Ultralytics defaults.
 * **Notes:** A solid starter model demonstrating the baseline performance on the original data split. Limited by the small backbone size for handling small objects and low-light conditions.
 
-![Training results] (plots/baseline.png)
+<p align="center">
+  <img src="plots/baseline.png" alt="Training results" width="100%"/>
+</p>
 
 | Metric ID | Value |
 | :--- | :--- |
@@ -88,7 +90,9 @@ This section provides the full configuration and results for each model variant 
 * **Setup:** `yolov8s.pt`, `imgsz=800`, 100 epochs, **SGD optimizer**, `mosaic=1.0`, `hsv_v=0.5`, `scale=0.5`. Used **CLAHE** as a preprocessing step.
 * **Notes:** Achieved high local AP, but the aggressive augmentations (CLAHE, high HSV values) and noisy data likely introduced artifacts, leading to an increase in False Positives and a slight degradation in the final score compared to the best model.
 
-![Training results] (plots/model2.png)
+<p align="center">
+  <img src="plots/model2.png" alt="Training results" width="100%"/>
+</p>
 
 | Metric ID | Value |
 | :--- | :--- |
@@ -100,7 +104,9 @@ This section provides the full configuration and results for each model variant 
 * **Setup:** Custom Dataset/collate function; heavy **Albumentations** pipeline (Flip, Rotate90, ColorJitter, Resize); `imgsz=800`.
 * **Notes:** The custom pipeline resulted in the worst performance. Issues included a pipeline mismatch (e.g., handling bounding box coordinates during `Rotate90`), inconsistent scaling, and an initial error of dropping "negative" samples, causing significant divergence from the standard Ultralytics trainer behavior.
 
-![Training results] (plots/model3.png)
+<p align="center">
+  <img src="plots/model3.png" alt="Training results" width="100%"/>
+</p>
 
 | Metric ID | Value |
 | :--- | :--- |
@@ -112,7 +118,9 @@ This section provides the full configuration and results for each model variant 
 * **Setup:** `yolov8s.pt`, `imgsz≈960`, **AdamW** + cosine LR schedule, reduced `mosaic≈0.25`, no `rotate90`, negatives kept, and a single-class loss bias (increased box loss weight, reduced classification loss weight, added focal loss).
 * **Notes:** Focused on data hygiene by using a **leak-free (scene-aware)** data split. This configuration served as a fast, stable backbone model used for ensembling and threshold tuning.
 
-![Training results] (plots/model4.png)
+<p align="center">
+  <img src="plots/model4.png" alt="Training results" width="100%"/>
+</p>
 
 | Metric ID | Value |
 | :--- | :--- |
@@ -124,7 +132,9 @@ This section provides the full configuration and results for each model variant 
 * **Setup:** Started from the best weights of Model #2, then fine-tuned on the **new leak-free split** (from Model #4). Inference parameters were swept and optimized, leading to the best result at `conf=0.10` and `iou=0.55`.
 * **Notes:** This model proved that the combination of clean, high-quality data (new split) and meticulous calibration of post-processing (confidence and NMS thresholds) yielded the greatest gain, moving the final score to the top result.
 
-![Training results] (plots/model5.png)
+<p align="center">
+  <img src="plots/model5.png" alt="Training results" width="100%"/>
+</p>
 
 | Metric ID | Value |
 | :--- | :--- |
