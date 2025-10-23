@@ -31,6 +31,7 @@ The most significant performance gain was achieved by combining a clean data spl
 
 | Model Name | Local mAP@0.5 | Local mAP@0.75 | Final Kaggle Score (Lower is Better) |
 | :--- | :---: | :---: | :---: |
+| **WBF Ensemble (best)**| 0.8772 | 0.5634  | **0.27970**|
 | **YOLOv8s - Fine-tuned (Best Model)** | **0.9025** | **0.5348** | **0.28135** |
 | YOLOv8s - Heavy Augmentation | 0.8800 | 0.5071 | 0.30645 | 
 | YOLOv8n - Baseline | 0.8468 | 0.4839 | 0.33465 |
@@ -198,3 +199,80 @@ cfg=(IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55,
 **Interpretation**
 - **High recall at 0.50 IoU** (AP50 ≈ 0.88).
 - **Moderate tightness at 0.75 IoU** (AP75 ≈ 0.56).
+**Note:** The ensemble slightly **outperforms the best single model** on the final score
+(0.27970 vs 0.28135) by trading a bit of AP@0.5 for a higher AP@0.75.
+
+## Qualitative Results & Error Analysis
+
+Below are representative examples from the **best ensemble** (WBF + consensus + final NMS).  
+Green = **GT (ground truth)**, Red = **Prediction** with confidence.
+
+- **True Positives (TP) with good localization** — clean overlaps, high confidence.  
+- **Borderline IoU / Localization errors** — boxes touch the person but are slightly offset; often pass at IoU=0.50 but fail at 0.75.  
+- **Valid-but-unlabeled detections (looks like FPs, actually label noise)** — the model finds a person the GT missed.  
+- **Over-detections / Hallucinations** — elongated shadows, trees, or bikes in highlight/glare regions trigger a person box.  
+- **Misses (FN)** — tiny, heavily occluded, or very dark pedestrians.
+
+### Examples
+<!-- Row 1: two images with captions -->
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good1.png" width="100%"><br/>
+      <sub>Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good2.png" width="100%"><br/>
+      <sub>Multiple TPs with tight localization. </sub>
+    </td>
+  </tr>
+</table>
+
+<!-- Row 2: two images with captions -->
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good3.png" width="100%"><br/>
+      <sub>Mixed scene; WBF merges overlapping model votes into a single, stable detection.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/mid1.png" width="100%"><br/>
+      <sub>Slight GT/pred box misalignment. </sub>
+    </td>
+  </tr>
+</table>
+
+<!-- Row 3: single image with caption -->
+<p align="center">
+  <img src="final_prediction_examples/bad2.png" width="60%"><br/>
+  <sub>A few over-detections on shadows/vertical structures. </sub>
+</p>
+
+
+### Error taxonomy & mitigations
+
+| Error Type | Visual Symptom | Why it happens | Mitigation |
+|---|---|---|---|
+| **Borderline IoU (localization)** | Red box shifted vs. green | Motion blur, fast bikes, partial occlusion; anchor-free heads biased | Train with higher `imgsz`, add motion blur aug, stronger box loss weight; consider box refinement (TTA or deformable heads) |
+| **Valid but unlabeled (label noise)** | Clear person with no GT box | Noisy low-light labels | Relabel pass; weak-labeling (pseudo-GT) + noise-robust loss |
+| **Hallucination / FP** | Boxes on shadows/trees/glare | Low contrast + high specular highlights | Calibrate thresholds, consensus gating (`MIN_MODELS≥2`), glare-aware augmentations |
+| **Miss (FN)** | Person present but no red box | Very small/occluded/far | Larger `imgsz`, multiscale training, focal loss, small-object priors |
+
+## Further Improvements — Other Pre-Trained Models & Side Techniques
+
+### Try stronger pre-trained detectors
+- **YOLO family:** YOLOv8-l/x, **YOLOv9-s/l**, **YOLOv11-s/l**.
+- **Anchor-free one-stage:** **PP-YOLOE-S/M**, **YOLOX-S/M**.
+- **Transformer detectors (small variants):** **RT-DETR-R18/R50**, **DINO-DETR-Tiny/Small** (often better on crowded scenes).
+- **Two-stage classics:** **Faster R-CNN / Cascade R-CNN** with **ResNet50/ConvNeXt-T** backbones (strong high-IoU boxes).
+
+### Side techniques (no retraining or light-touch)
+- **TTA at inference:** horizontal flip + multi-scale (0.8×/1.0×/1.2×); fuse with **WBF**.
+- **Soft-NMS** as the final dedup step (swap for hard NMS in the ensemble script).
+- **Per-model WBF weights:** tune with Optuna or simple grid (e.g., favor the best AP@0.75 model).
+- **Confidence calibration:** temperature scaling on the leak-free val set (improves ranking at 0.75 IoU).
+- **Tiling for large frames:** slide windows with 20–30% overlap; merge tiles with WBF.
+- **Low-light enhancement as a branch:** run CLAHE/Retinex on copies of the image, predict with one strong model, and fuse with the raw branch.
+- **Pseudo-labeling (light):** add only **very high-confidence** predictions from the best model to boost recall on dark scenes, then re-export for ensembling.
+
+
