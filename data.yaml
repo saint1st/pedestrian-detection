@@ -1,0 +1,6 @@
+train: X:/Desktop/sergek/yolo_new_split/images/train
+val: X:/Desktop/sergek/yolo_new_split/images/val
+
+nc: 1
+names: ['person']
+
