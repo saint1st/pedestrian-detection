@@ -201,3 +201,54 @@ cfg=(IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55,
 - **Moderate tightness at 0.75 IoU** (AP75 ≈ 0.56).
 **Note:** The ensemble slightly **outperforms the best single model** on the final score
 (0.27970 vs 0.28135) by trading a bit of AP@0.5 for a higher AP@0.75.
+
+## Qualitative Results & Error Analysis
+
+Below are representative examples from the **best ensemble** (WBF + consensus + final NMS).  
+Green = **GT (ground truth)**, Red = **Prediction** with confidence.
+
+- **True Positives (TP) with good localization** — clean overlaps, high confidence.  
+- **Borderline IoU / Localization errors** — boxes touch the person but are slightly offset; often pass at IoU=0.50 but fail at 0.75.  
+- **Valid-but-unlabeled detections (looks like FPs, actually label noise)** — the model finds a person the GT missed.  
+- **Over-detections / Hallucinations** — elongated shadows, trees, or bikes in highlight/glare regions trigger a person box.  
+- **Misses (FN)** — tiny, heavily occluded, or very dark pedestrians.
+
+### Examples (drop these images into your repo and adjust paths)
+
+<p align="center">
+  <img src="final_prediction_example/good1.png" width="48%"/>
+  <img src="final_prediction_example/good2.png" width="48%"/>
+</p>
+
+- **Good1**: Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.  
+- **Good2**: Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
+
+<p align="center">
+  <img src="final_prediction_example/good3.png" width="48%"/>
+  <img src="final_prediction_example/mid1.png" width="48%"/>
+</p>
+
+- **Good3**: Mixed scene; WBF merges overlapping model votes into a single, stable detection.  
+- **Mid1**: Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).
+
+<p align="center">
+  <img src="final_prediction_example/bad2.png" width="60%"/>
+</p>
+
+- **Bad2**: A few **over-detections** on shadows/vertical structures; also a likely **missed GT** (label noise) the model detects confidently.  
+  This explains why AP can penalize the model even when predictions look semantically reasonable.
+
+### Error taxonomy & mitigations
+
+| Error Type | Visual Symptom | Why it happens | Mitigation |
+|---|---|---|---|
+| **Borderline IoU (localization)** | Red box shifted vs. green | Motion blur, fast bikes, partial occlusion; anchor-free heads biased | Train with higher `imgsz`, add motion blur aug, stronger box loss weight; consider box refinement (TTA or deformable heads) |
+| **Valid but unlabeled (label noise)** | Clear person with no GT box | Noisy low-light labels | Relabel pass; weak-labeling (pseudo-GT) + noise-robust loss |
+| **Hallucination / FP** | Boxes on shadows/trees/glare | Low contrast + high specular highlights | Calibrate thresholds, consensus gating (`MIN_MODELS≥2`), glare-aware augmentations |
+| **Miss (FN)** | Person present but no red box | Very small/occluded/far | Larger `imgsz`, multiscale training, focal loss, small-object priors |
+
+### How the ensemble helps
+
+- **WBF**: merges overlapping boxes across models ⇒ **fewer duplicates**, better **centroid** and **size**.  
+- **Consensus gating** (`MIN_MODELS`) + **score gating** (`FINAL_SCORE_THR`) ⇒ removes many spurious single-model FPs in dark regions.  
+- **Final NMS**: de-duplicates residual overlaps after fusion.
