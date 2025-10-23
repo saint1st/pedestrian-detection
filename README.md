@@ -216,7 +216,7 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 ### Examples
 
 <p align="center">
-  <img src="final_prediction_examples/good1.png" alt="1" width="48%"/>
+  <img src="final_prediction_examples/good1.png" alt="Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating." width="48%"/>
   <img src="final_prediction_examples/good2.png" alt="2" width="48%"/>
 </p>
 
