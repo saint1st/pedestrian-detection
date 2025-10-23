@@ -215,13 +215,24 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 
 ### Examples
 
-<p align="center">
-  <img src="final_prediction_examples/good1.png" alt="Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating." width="48%"/>
-  <img src="final_prediction_examples/good2.png" alt="2" width="48%"/>
-</p>
-
-- **1**: Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.  
-- **2**: Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
+<div align="center">
+  <figure style="display: inline-block;">
+    <img src="final_prediction_examples/good1.png" 
+         alt="Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating." 
+         width="48%">
+    <figcaption>
+      Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.
+    </figcaption>
+  </figure>
+  <figure style="display: inline-block;">
+    <img src="final_prediction_examples/good2.png" 
+         alt="Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50." 
+         width="48%">
+    <figcaption>
+      Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
+    </figcaption>
+  </figure>
+</div>
 
 <p align="center">
   <img src="final_prediction_examples/good3.png" alt="3" width="48%"/>
