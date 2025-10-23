@@ -31,6 +31,7 @@ The most significant performance gain was achieved by combining a clean data spl
 
 | Model Name | Local mAP@0.5 | Local mAP@0.75 | Final Kaggle Score (Lower is Better) |
 | :--- | :---: | :---: | :---: |
+| **WBF Ensemble (best)**| 0.8772 | 0.5634  | **0.27970**|
 | **YOLOv8s - Fine-tuned (Best Model)** | **0.9025** | **0.5348** | **0.28135** |
 | YOLOv8s - Heavy Augmentation | 0.8800 | 0.5071 | 0.30645 | 
 | YOLOv8n - Baseline | 0.8468 | 0.4839 | 0.33465 |
