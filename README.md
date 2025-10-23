@@ -37,6 +37,17 @@ The most significant performance gain was achieved by combining a clean data spl
 | YOLOv8s - Clean Split + imgsz=960 | 0.8382 | 0.4677 | 0.34705 |
 | YOLOv8s - Custom Trainer | 0.6791 | 0.2397 | 0.54060 |
 
+
+| Model / Method                                | AP@0.5 | AP@0.75 | Final Score ↓ | Notes |
+| :-------------------------------------------- | :----: | :-----: | :-----------: | :---- |
+| **WBF Ensemble (best)**                       | 0.8772 | 0.5634  | **0.27970**   | cfg: IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55, MIN_MODELS=1, MAX_DETS=5 |
+| **YOLOv8s — Fine-tuned (Best single model)**  | 0.9025 | 0.5348  | 0.28135       | tuned inference |
+| YOLOv8s — Heavy Augmentation                  | 0.8800 | 0.5071  | 0.30645       | random split |
+| YOLOv8n — Baseline                            | 0.8468 | 0.4839  | 0.33465       | random split |
+| YOLOv8s — Clean Split + imgsz=960             | 0.8382 | 0.4677  | 0.34705       | leak-free split |
+| YOLOv8s — Custom Trainer                      | 0.6791 | 0.2397  | 0.54060       | heavy Albumentations |
+
+
 ---
 
 ## Detailed Model Experimentation
@@ -198,3 +209,5 @@ cfg=(IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55,
 **Interpretation**
 - **High recall at 0.50 IoU** (AP50 ≈ 0.88).
 - **Moderate tightness at 0.75 IoU** (AP75 ≈ 0.56).
+**Note:** The ensemble slightly **outperforms the best single model** on the final score
+(0.27970 vs 0.28135) by trading a bit of AP@0.5 for a higher AP@0.75.
