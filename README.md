@@ -216,23 +216,23 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 ### Examples (drop these images into your repo and adjust paths)
 
 <p align="center">
-  <img src="final_prediction_example/good1.png" width="48%"/>
-  <img src="final_prediction_example/good2.png" width="48%"/>
+  <img src="final_prediction_examples/good1.png" width="48%"/>
+  <img src="final_prediction_examples/good2.png" width="48%"/>
 </p>
 
 - **Good1**: Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.  
 - **Good2**: Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
 
 <p align="center">
-  <img src="final_prediction_example/good3.png" width="48%"/>
-  <img src="final_prediction_example/mid1.png" width="48%"/>
+  <img src="final_prediction_examples/good3.png" width="48%"/>
+  <img src="final_prediction_examples/mid1.png" width="48%"/>
 </p>
 
 - **Good3**: Mixed scene; WBF merges overlapping model votes into a single, stable detection.  
 - **Mid1**: Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).
 
 <p align="center">
-  <img src="final_prediction_example/bad2.png" width="60%"/>
+  <img src="final_prediction_examples/bad2.png" width="60%"/>
 </p>
 
 - **Bad2**: A few **over-detections** on shadows/vertical structures; also a likely **missed GT** (label noise) the model detects confidently.  
