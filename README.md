@@ -186,4 +186,175 @@ To find the optimal ensemble configuration, we execute a grid search over key hy
 
 ***
 
-**Current Status:** The final hyperparameter grid search is actively running to find the globally optimal setting for the combined ensemble. Results, including the best configuration and the final score achieved, will be updated here upon completion.
+# Ensemble & Post-Processing Experiments
+
+## TL;DR
+We trained multiple YOLOv8 models, exported per-image predictions to JSON, and ran a grid search over **Weighted Boxes Fusion (WBF)** + **post-filters** (score gating, optional cross-model consensus, final NMS, and max-detections cap).  
+We evaluated with the official `pascalvoc.py` at **IoU=0.50** and **IoU=0.75**, and ranked configurations by the competition metric **MAE-to-1**:
+\[
+\text{score}=\frac{(1-AP_{50})+(1-AP_{75})}{2}
+\]
+
+**Best configuration found**
+AP50 = 0.8772
+AP75 = 0.5634
+score = 0.27970 (lower is better)
+cfg = (IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55, MIN_MODELS=1, MAX_DETS=5)
+
+
+
+
+---
+
+## Setup Overview
+
+**Inputs**
+- Trained detector checkpoints (5 models total; 3 were ensembled in the sweep).
+- Per-image prediction JSON files, one folder per model:
+  - Each JSON contains:
+    - `width`, `height`
+    - `boxes` (normalized `[x1,y1,x2,y2]` in `[0,1]`)
+    - `scores`, `labels` (single class: `person`)
+- Ground-truth txt files in the evaluator folder: `evaluate/groundtruths/`
+
+**Core scripts**
+- `sweep_wbf.py` — runs the grid search, writes detection txts, calls `pascalvoc.py`, and summarizes results.
+- `overlay_viz.py` — utilities to visualize predictions vs. ground truth (optional).
+
+---
+
+## Methods
+
+### 1) Base Predictions
+Export raw per-image predictions from each model into JSON (normalized coords).
+
+### 2) Fusion: Weighted Boxes Fusion (WBF)
+- Stack predictions from selected models and fuse overlapping boxes via **WBF** (`ensemble_boxes.weighted_boxes_fusion`).
+- **Grid params**:
+  - `IOU_THR` ∈ {0.60, 0.65, 0.68}
+  - `SKIP_BOX_THR` ∈ {0.005, 0.01, 0.02}
+- **Model weights**: `[1.2, 1.0, 1.0]` (normalized internally).
+
+### 3) Post-fusion Filters
+- **Score gating**: drop fused boxes with `score < FINAL_SCORE_THR`, where  
+  `FINAL_SCORE_THR` ∈ {0.20, 0.22, 0.25}.
+- **Cross-model consensus (optional)**:
+  - Keep a fused box only if at least `MIN_MODELS` raw models support it with IoU ≥ `SUPPORT_IOU = 0.50`.
+  - `MIN_MODELS` ∈ {1 (off), 2}.
+- **Final NMS**:
+  - Apply `torchvision.ops.nms` with `FINAL_NMS_IOU` ∈ {0.50, 0.55}.
+- **Max detections cap**:
+  - Keep the top-K by confidence: `MAX_DETS` ∈ {4, 5}.
+
+### 4) Evaluation
+- For each configuration, detections are written into a fresh `detections/` folder and copied under the evaluator directory.
+- Run `pascalvoc.py` twice:
+  - `--threshold 0.50` → **AP50**
+  - `--threshold 0.75` → **AP75**
+- Compute the leaderboard score:  
+  `score = ((1 - AP50) + (1 - AP75)) / 2`.
+
+> The script creates unique result directories to avoid overwrite prompts and auto-feeds `"Y\n"` if the evaluator asks.
+
+---
+
+## Grid Search
+
+- Cartesian grid over 6 hyperparameters → **216 variants**.
+- For each variant:
+  1. Fuse → filter → NMS → cap
+  2. Write `detections/*.txt`
+  3. Evaluate at IoU 0.50 and 0.75
+  4. Log `AP50`, `AP75`, and `score`
+- After all variants, print **Top-10** and the **Best** configuration with its output directory.
+
+---
+
+## Best Result (from this sweep)
+
+score=0.27970
+AP50=0.8772
+AP75=0.5634
+cfg=(IOU_THR=0.65, SKIP_BOX_THR=0.005, FINAL_SCORE_THR=0.20, FINAL_NMS_IOU=0.55, MIN_MODELS=1, MAX_DETS=5)
+
+
+
+**Interpretation**
+- **High recall at 0.50 IoU** (AP50 ≈ 0.88).
+- **Moderate tightness at 0.75 IoU** (AP75 ≈ 0.56).
+- Consensus didn’t help here (`MIN_MODELS=1`), suggesting fusing all signals and a light NMS was superior to aggressive pruning.
+
+---
+
+## Simple WBF vs. Simple NMS (Notes)
+
+We also compared simpler baselines:
+- **Simple NMS only**: run NMS on one model’s predictions.
+- **Simple WBF only**: fuse model predictions with WBF, then minimal filtering.
+- In our setting the **full pipeline** (WBF → score gating → light NMS → top-K) outperformed these simpler variants.
+
+> Add exact numbers below if desired:
+
+| Method | AP50 | AP75 | score |
+|---|---:|---:|---:|
+| Single model + NMS | _(fill)_ | _(fill)_ | _(fill)_ |
+| Simple WBF (no consensus, minimal NMS) | _(fill)_ | _(fill)_ | _(fill)_ |
+| **WBF + gating + light NMS + cap (best)** | **0.8772** | **0.5634** | **0.27970** |
+
+---
+
+## Repro & Usage
+
+### 1) Configure paths in `sweep_wbf.py`
+```python
+MODEL_PREDS = [
+    r'X:\Desktop\sergek\preds_raw\train',
+    r'X:\Desktop\sergek\preds_raw\yolo_baseline',
+    r'X:\Desktop\sergek\preds_raw\yolo_new_split',
+]
+EVAL_ROOT = Path(r'X:\Desktop\sergek\evaluate\evaluate')   # contains pascalvoc.py and groundtruths/
+SWEEP_OUT = Path(r'X:\Desktop\sergek\wbf_sweep')
+
+2) Run the sweep
+python sweep_wbf.py
+
+ - Progress, per-variant metrics, Top-10, and Best are printed to console.
+ - Each variant’s detections and debug CSV live under SWEEP_OUT/<tag>/.
+
+3) Visual inspection (optional)
+
+```
+from overlay_viz import visualize_batch
+
+visualize_batch(
+    det_dir=r"X:\Desktop\sergek\wbf_sweep\<best_tag>\detections",
+    gt_dir=r"X:\Desktop\sergek\evaluate\evaluate\groundtruths",
+    images_dir=r"X:\Desktop\sergek\train\train\train_images",
+    num_samples=8,
+    iou_thr=0.50,
+    seed=1337,
+    save_dir=None,     # or an output folder
+    show=True
+)
+
+```
+
+If raw images aren’t available, overlay_viz.py can draw white canvases sized from JSON metadata—set fallback_json_meta to a predictions folder—but real images are recommended.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
