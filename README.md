@@ -213,29 +213,29 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 - **Over-detections / Hallucinations** — elongated shadows, trees, or bikes in highlight/glare regions trigger a person box.  
 - **Misses (FN)** — tiny, heavily occluded, or very dark pedestrians.
 
-### Examples (drop these images into your repo and adjust paths)
+### Examples
 
 <p align="center">
-  <img src="final_prediction_examples/good1.png" width="48%"/>
-  <img src="final_prediction_examples/good2.png" width="48%"/>
+  <img src="final_prediction_examples/good1.png" alt="1" width="48%"/>
+  <img src="final_prediction_examples/good2.png" alt="2" width="48%"/>
 </p>
 
-- **Good1**: Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.  
-- **Good2**: Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
+- **1**: Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.  
+- **2**: Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
 
 <p align="center">
-  <img src="final_prediction_examples/good3.png" width="48%"/>
-  <img src="final_prediction_examples/mid1.png" width="48%"/>
+  <img src="final_prediction_examples/good3.png" alt="3" width="48%"/>
+  <img src="final_prediction_examples/mid1.png" alt="4" width="48%"/>
 </p>
 
-- **Good3**: Mixed scene; WBF merges overlapping model votes into a single, stable detection.  
-- **Mid1**: Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).
+- **3**: Mixed scene; WBF merges overlapping model votes into a single, stable detection.  
+- **4**: Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).
 
 <p align="center">
-  <img src="final_prediction_examples/bad2.png" width="60%"/>
+  <img src="final_prediction_examples/bad2.png" alt="5" width="60%"/>
 </p>
 
-- **Bad2**: A few **over-detections** on shadows/vertical structures; also a likely **missed GT** (label noise) the model detects confidently.  
+- **5**: A few **over-detections** on shadows/vertical structures; also a likely **missed GT** (label noise) the model detects confidently.  
   This explains why AP can penalize the model even when predictions look semantically reasonable.
 
 ### Error taxonomy & mitigations
