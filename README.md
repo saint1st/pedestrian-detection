@@ -223,7 +223,7 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
     </td>
     <td align="center" width="50%">
       <img src="final_prediction_examples/good2.png" width="100%"><br/>
-      <sub>Multiple TPs with tight localization; one borderline box explains why AP@0.75 lags AP@0.50.</sub>
+      <sub>Multiple TPs with tight localization. </sub>
     </td>
   </tr>
 </table>
@@ -237,7 +237,7 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
     </td>
     <td align="center" width="50%">
       <img src="final_prediction_examples/mid1.png" width="100%"><br/>
-      <sub>Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).</sub>
+      <sub>Slight GT/pred box misalignment. </sub>
     </td>
   </tr>
 </table>
@@ -245,7 +245,7 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 <!-- Row 3: single image with caption -->
 <p align="center">
   <img src="final_prediction_examples/bad2.png" width="60%"><br/>
-  <sub>A few over-detections on shadows/vertical structures; also a likely missed GT the model detects confidently — explains AP penalties despite semantically reasonable predictions.</sub>
+  <sub>A few over-detections on shadows/vertical structures. </sub>
 </p>
 
 
@@ -258,8 +258,21 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 | **Hallucination / FP** | Boxes on shadows/trees/glare | Low contrast + high specular highlights | Calibrate thresholds, consensus gating (`MIN_MODELS≥2`), glare-aware augmentations |
 | **Miss (FN)** | Person present but no red box | Very small/occluded/far | Larger `imgsz`, multiscale training, focal loss, small-object priors |
 
-### How the ensemble helps
+## Further Improvements — Other Pre-Trained Models & Side Techniques
 
-- **WBF**: merges overlapping boxes across models ⇒ **fewer duplicates**, better **centroid** and **size**.  
-- **Consensus gating** (`MIN_MODELS`) + **score gating** (`FINAL_SCORE_THR`) ⇒ removes many spurious single-model FPs in dark regions.  
-- **Final NMS**: de-duplicates residual overlaps after fusion.
+### Try stronger pre-trained detectors
+- **YOLO family:** YOLOv8-l/x, **YOLOv9-s/l**, **YOLOv11-s/l**.
+- **Anchor-free one-stage:** **PP-YOLOE-S/M**, **YOLOX-S/M**.
+- **Transformer detectors (small variants):** **RT-DETR-R18/R50**, **DINO-DETR-Tiny/Small** (often better on crowded scenes).
+- **Two-stage classics:** **Faster R-CNN / Cascade R-CNN** with **ResNet50/ConvNeXt-T** backbones (strong high-IoU boxes).
+
+### Side techniques (no retraining or light-touch)
+- **TTA at inference:** horizontal flip + multi-scale (0.8×/1.0×/1.2×); fuse with **WBF**.
+- **Soft-NMS** as the final dedup step (swap for hard NMS in the ensemble script).
+- **Per-model WBF weights:** tune with Optuna or simple grid (e.g., favor the best AP@0.75 model).
+- **Confidence calibration:** temperature scaling on the leak-free val set (improves ranking at 0.75 IoU).
+- **Tiling for large frames:** slide windows with 20–30% overlap; merge tiles with WBF.
+- **Low-light enhancement as a branch:** run CLAHE/Retinex on copies of the image, predict with one strong model, and fuse with the raw branch.
+- **Pseudo-labeling (light):** add only **very high-confidence** predictions from the best model to boost recall on dark scenes, then re-export for ensembling.
+
+
