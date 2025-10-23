@@ -214,40 +214,40 @@ Green = **GT (ground truth)**, Red = **Prediction** with confidence.
 - **Misses (FN)** — tiny, heavily occluded, or very dark pedestrians.
 
 ### Examples
+<!-- Row 1: two images with captions -->
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good1.png" width="100%"><br/>
+      <sub>Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good2.png" width="100%"><br/>
+      <sub>Multiple TPs with tight localization; one borderline box explains why AP@0.75 lags AP@0.50.</sub>
+    </td>
+  </tr>
+</table>
 
-<div align="center">
-  <figure style="display: inline-block;">
-    <img src="final_prediction_examples/good1.png" 
-         alt="Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating." 
-         width="48%">
-    <figcaption>
-      Clear TP on cyclist; low-confidence boxes in dark foliage pruned by final NMS/score gating.
-    </figcaption>
-  </figure>
-  <figure style="display: inline-block;">
-    <img src="final_prediction_examples/good2.png" 
-         alt="Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50." 
-         width="48%">
-    <figcaption>
-      Multiple TPs with tight localization; one borderline box illustrates why AP@0.75 lags AP@0.50.
-    </figcaption>
-  </figure>
-</div>
+<!-- Row 2: two images with captions -->
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/good3.png" width="100%"><br/>
+      <sub>Mixed scene; WBF merges overlapping model votes into a single, stable detection.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="final_prediction_examples/mid1.png" width="100%"><br/>
+      <sub>Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).</sub>
+    </td>
+  </tr>
+</table>
 
+<!-- Row 3: single image with caption -->
 <p align="center">
-  <img src="final_prediction_examples/good3.png" alt="3" width="48%"/>
-  <img src="final_prediction_examples/mid1.png" alt="4" width="48%"/>
+  <img src="final_prediction_examples/bad2.png" width="60%"><br/>
+  <sub>A few over-detections on shadows/vertical structures; also a likely missed GT the model detects confidently — explains AP penalties despite semantically reasonable predictions.</sub>
 </p>
 
-- **3**: Mixed scene; WBF merges overlapping model votes into a single, stable detection.  
-- **4**: Slight GT/pred box misalignment — passes at 0.50 IoU, borderline at 0.75 (localization sensitivity).
-
-<p align="center">
-  <img src="final_prediction_examples/bad2.png" alt="5" width="60%"/>
-</p>
-
-- **5**: A few **over-detections** on shadows/vertical structures; also a likely **missed GT** (label noise) the model detects confidently.  
-  This explains why AP can penalize the model even when predictions look semantically reasonable.
 
 ### Error taxonomy & mitigations
 
